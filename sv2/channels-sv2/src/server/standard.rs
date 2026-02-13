@@ -277,6 +277,28 @@ where
         self.nominal_hashrate = nominal_hashrate;
     }
 
+    /// Updates the miner tag for future jobs.
+    ///
+    /// This allows dynamic modification of the miner tag without recreating the channel.
+    /// Validates that the new tag won't exceed scriptSig size limits.
+    pub fn set_miner_tag(&mut self, miner_tag: Option<String>) -> Result<(), StandardChannelError> {
+        // Validate that the new tag won't exceed scriptSig size limits
+        let script_sig_size = 5 + // BIP34
+            1 + // OP_PUSHBYTES
+            3 + // `/` delimiters
+            self.job_factory.pool_tag_string.as_ref().map_or(0, |s| s.len()) +
+            miner_tag.as_ref().map_or(0, |s| s.len()) +
+            1 + // OP_PUSHBYTES
+            self.extranonce_prefix.len();
+
+        if script_sig_size > 100 {
+            return Err(StandardChannelError::ScriptSigSizeTooLarge);
+        }
+
+        self.job_factory.set_miner_tag(miner_tag);
+        Ok(())
+    }
+
     /// Returns the requested maximum target for this channel.
     pub fn get_requested_max_target(&self) -> &Target {
         &self.requested_max_target
