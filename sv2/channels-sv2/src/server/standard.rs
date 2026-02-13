@@ -401,6 +401,20 @@ impl StandardChannel {
         self.stable_hashrate
     }
 
+    /// Updates the miner tag for future jobs.
+    ///
+    /// This allows dynamic modification of the miner tag without recreating the channel.
+    /// Validates that the new tag won't exceed scriptSig size limits.
+    pub fn set_miner_tag(&mut self, miner_tag: Option<String>) -> Result<(), StandardChannelError> {
+        let mut job_factory = self.job_factory.clone();
+        job_factory.set_miner_tag(miner_tag);
+        if !job_factory.fits_script_sig_budget(self.extranonce_prefix.len()) {
+            return Err(StandardChannelError::ScriptSigSizeTooLarge);
+        }
+        self.job_factory = job_factory;
+        Ok(())
+    }
+
     /// Returns the requested maximum target for this channel.
     pub fn get_requested_max_target(&self) -> &Target {
         &self.requested_max_target
