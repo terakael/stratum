@@ -208,6 +208,28 @@ where
         self.chain_tip.as_ref()
     }
 
+    /// Updates the miner tag for future jobs.
+    ///
+    /// This allows dynamic modification of the miner tag without recreating the channel.
+    /// Validates that the new tag won't exceed scriptSig size limits.
+    pub fn set_miner_tag(&mut self, miner_tag: Option<String>) -> Result<(), GroupChannelError> {
+        // Validate that the new tag won't exceed scriptSig size limits
+        let script_sig_size = 5 + // BIP34
+            1 + // OP_PUSHBYTES
+            3 + // `/` delimiters
+            self.job_factory.pool_tag_string.as_ref().map_or(0, |s| s.len()) +
+            miner_tag.as_ref().map_or(0, |s| s.len()) +
+            1 + // OP_PUSHBYTES
+            self.full_extranonce_size;
+
+        if script_sig_size > 100 {
+            return Err(GroupChannelError::ScriptSigSizeTooLarge);
+        }
+
+        self.job_factory.set_miner_tag(miner_tag);
+        Ok(())
+    }
+
     /// Only for testing purposes, not meant to be used in real apps.
     #[cfg(test)]
     pub fn set_chain_tip(&mut self, chain_tip: ChainTip) {
