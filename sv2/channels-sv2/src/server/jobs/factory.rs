@@ -93,7 +93,7 @@ impl JobIdFactory {
 pub struct JobFactory {
     job_id_factory: JobIdFactory,
     version_rolling_allowed: bool,
-    pool_tag_string: Option<String>,
+    pub(crate) pool_tag_string: Option<String>,
     miner_tag_string: Option<String>,
 }
 
@@ -116,6 +116,13 @@ impl JobFactory {
             pool_tag_string,
             miner_tag_string,
         }
+    }
+
+    /// Updates the miner tag string for future jobs.
+    ///
+    /// This allows dynamic modification of the miner tag that appears in the coinbase scriptSig.
+    pub fn set_miner_tag(&mut self, miner_tag_string: Option<String>) {
+        self.miner_tag_string = miner_tag_string;
     }
 
     /// Returns a byte vector with the OP_PUSHBYTES opcode and `Sv2/<pool>/<miner>/` tag.
