@@ -93,7 +93,7 @@ impl JobIdFactory {
 pub struct JobFactory {
     job_id_factory: JobIdFactory,
     version_rolling_allowed: bool,
-    pub(crate) pool_tag_string: Option<String>,
+    pool_tag_string: Option<String>,
     miner_tag_string: Option<String>,
 }
 

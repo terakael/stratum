@@ -1,4 +1,4 @@
-//! Sv2 Group Channel - Mining Server Abstraction.
+//! Sv3 Group Channel - Mining Server Abstraction.
 //!
 //! This module defines the [`GroupChannel`] struct, which provides an abstraction of a Stratum V2
 //! (SV2) group channel as maintained by a mining server.
@@ -262,20 +262,12 @@ impl GroupChannel {
     /// This allows dynamic modification of the miner tag without recreating the channel.
     /// Validates that the new tag won't exceed scriptSig size limits.
     pub fn set_miner_tag(&mut self, miner_tag: Option<String>) -> Result<(), GroupChannelError> {
-        // Validate that the new tag won't exceed scriptSig size limits
-        let script_sig_size = 5 + // BIP34
-            1 + // OP_PUSHBYTES
-            3 + // `/` delimiters
-            self.job_factory.pool_tag_string.as_ref().map_or(0, |s| s.len()) +
-            miner_tag.as_ref().map_or(0, |s| s.len()) +
-            1 + // OP_PUSHBYTES
-            self.full_extranonce_size;
-
-        if script_sig_size > 100 {
+        let mut job_factory = self.job_factory.clone();
+        job_factory.set_miner_tag(miner_tag);
+        if !job_factory.fits_script_sig_budget(self.full_extranonce_size) {
             return Err(GroupChannelError::ScriptSigSizeTooLarge);
         }
-
-        self.job_factory.set_miner_tag(miner_tag);
+        self.job_factory = job_factory;
         Ok(())
     }
 
